@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenue sur Stockorama</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<header>
+    <nav>
+        <ul>
+            <li><a href="/">Accueil</a></li>
+            <li><a href="/equipements">Équipements</a></li>
+            <li><a href="/ajouter">Ajouter un équipement</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <h1>Bienvenue sur Stockorama</h1>
+
+    <!-- Section Dashboard -->
+    <section class="dashboard">
+        <div class="dashboard-item">
+            <h2>État des équipements</h2>
+            <canvas id="statusChart" width="400" height="400"></canvas>
+        </div>
+    </section>
+</main>
+<footer>
+    <p>&copy; 2024 Stockorama. Tous droits réservés.</p>
+</footer>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inject the data from Express into JavaScript variables
+        const statuses = <%- JSON.stringify(statuses) %>;
+        const statusCounts = <%= JSON.stringify(statusCounts) %>;
+
+        const ctx = document.getElementById('statusChart').getContext('2d');
+
+        const chart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: statuses,
+                datasets: [{
+                    label: 'État des équipements',
+                    data: statusCounts,
+                    backgroundColor: ['#ffcccb', '#90ee90', '#ffa07a'],
+                    borderColor: ['#e74c3c', '#2ecc71', '#ff6347'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'État des équipements'
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

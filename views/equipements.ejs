@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css">
+
+    <style>
+        table {
+            margin: 0 auto;
+            width: 80%;
+            border-collapse: collapse;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .search-sort-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .search-sort-container input, .search-sort-container select {
+            margin: 0 10px;
+            padding: 10px;
+        }
+
+        .popup {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 5px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .popup.error {
+            background-color: #dc3545;
+        }
+
+        .popup.show {
+            opacity: 1; /* Réglage de l'opacité à 1 lors de l'affichage */
+        }
+    </style>
+</head>
+<body>
+<%- include('partials/header') %>
+<main>
+    <h1><%= title %></h1>
+
+    <div class="search-sort-container">
+        <input type="text" id="search" placeholder="Rechercher par nom...">
+        <select id="statut-filter">
+            <option value="">Tous les statuts</option>
+            <% statuses.forEach(status => { %>
+                <option value="<%= status.nom %>"><%= status.nom %></option>
+            <% }) %>
+        </select>
+        <select id="sort">
+            <option value="nom">Nom</option>
+            <option value="marque">Marque</option>
+            <option value="modele">Modèle</option>
+            <option value="code_barre">Code Barre</option>
+        </select>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Nom</th>
+            <th>Marque</th>
+            <th>Modèle</th>
+            <th>Status</th>
+            <th>Code Barre</th>
+            <th>Actions</th> <!-- Nouvelle colonne pour les boutons Modifier/Supprimer -->
+        </tr>
+        </thead>
+        <tbody id="equipements-tbody">
+        <% equipements.forEach(equipement => { %> <!-- Définir equipement ici -->
+        <tr>
+            <td><%= equipement.nom %></td>
+            <td><%= equipement.marque %></td>
+            <td><%= equipement.modele %></td>
+            <td><%= equipement.statut %></td>
+            <td><%= equipement.code_barre %></td>
+            <td>
+                <button onclick="afficherFormulaireModifier('<%= equipement.id %>')">Modifier</button>
+                <button onclick="supprimerEquipement('<%= equipement.id %>')">Supprimer</button>
+            </td>
+        </tr>
+        <% }) %>
+        </tbody>
+    </table>
+
+</main>
+<%- include('partials/footer') %>
+</body>
+<script>
+    document.getElementById('search').addEventListener('input', function() {
+        filterEquipments();
+    });
+
+    document.getElementById('statut-filter').addEventListener('change', function() {
+        filterEquipments();
+    });
+
+    document.getElementById('sort').addEventListener('change', function() {
+        sortEquipments();
+    });
+
+    function filterEquipments() {
+        const searchValue = document.getElementById('search').value.toLowerCase();
+        const statutFilter = document.getElementById('statut-filter').value.toLowerCase();
+        const rows = document.querySelectorAll('#equipements-tbody tr');
+
+        rows.forEach(row => {
+            const nomValue = row.cells[0].textContent.toLowerCase();
+            const modeleValue = row.cells[2].textContent.toLowerCase();
+            const statutValue = row.cells[3].textContent.toLowerCase();
+
+            if ((nomValue.includes(searchValue) || modeleValue.includes(searchValue)) &&
+                (statutFilter === '' || statutValue === statutFilter)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function sortEquipments() {
+        const sortValue = document.getElementById('sort').value;
+        const rows = Array.from(document.querySelectorAll('#equipements-tbody tr'));
+
+        rows.sort((a, b) => {
+            const cellA = a.querySelector(`td:nth-child(${sortValue === 'nom' ? 1 : sortValue === 'marque' ? 2 : sortValue === 'modele' ? 3 : 5})`).textContent.toLowerCase();
+            const cellB = b.querySelector(`td:nth-child(${sortValue === 'nom' ? 1 : sortValue === 'marque' ? 2 : sortValue === 'modele' ? 3 : 5})`).textContent.toLowerCase();
+
+            if (cellA < cellB) return -1;
+            if (cellA > cellB) return 1;
+            return 0;
+        });
+
+        const tbody = document.getElementById('equipements-tbody');
+        tbody.innerHTML = '';
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    function supprimerEquipement(id) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cet équipement ?')) {
+            fetch('/equipements/' + id, {
+                method: 'DELETE',
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erreur lors de la suppression de l\'équipement');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    alert('Équipement supprimé avec succès');
+                    // Rafraîchir la page ou mettre à jour la liste des équipements
+                    window.location.reload();
+                })
+                .catch(error => {
+                    alert('Erreur : ' + error.message);
+                });
+        }
+    }
+</script>
+</html>
