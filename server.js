@@ -85,12 +85,18 @@ app.get('/equipements', (req, res) => {
             return;
         }
 
+        // Vérification des données récupérées
+        console.log("Équipements récupérés :", equipements);
+
         // Récupération des marques
         db.query('SELECT * FROM marque', (err, marques) => {
             if (err) {
                 res.status(500).send(err);
                 return;
             }
+
+            // Vérification des données récupérées
+            console.log("Marques récupérées :", marques);
 
             // Récupération des statuts
             db.query('SELECT * FROM status', (err, statuses) => {
@@ -99,12 +105,16 @@ app.get('/equipements', (req, res) => {
                     return;
                 }
 
+                // Vérification des données récupérées
+                console.log("Statuses récupérés :", statuses);
+
                 // Rendu de la vue equipements.ejs avec les données récupérées
                 res.render('equipements', {
                     title: 'Liste des équipements',
                     equipements: equipements,
                     marques: marques,
-                    statuses: statuses
+                    statuses: statuses,
+                    modifierVisible: false // Ajout de cette ligne
                 });
             });
         });
@@ -120,10 +130,29 @@ app.get('/equipements/:id', (req, res) => {
             res.status(500).send(err);
         } else {
             if (results.length > 0) {
+                console.log("Détails de l'équipement récupérés :", results[0]); // Ajouter cette ligne pour déboguer
                 res.status(200).json(results[0]);
             } else {
                 res.status(404).send('Équipement non trouvé');
             }
+        }
+    });
+});
+
+// Route pour mettre à jour un équipement spécifique
+app.put('/equipements/:id', (req, res) => {
+    const { id } = req.params;
+    const { nom, marque_id, status_id, code_barre } = req.body;
+
+    const sql = 'UPDATE equipement SET nom = ?, marque_id = ?, status_id = ?, Code_barre = ? WHERE id = ?';
+    const values = [nom, marque_id, status_id, code_barre, id];
+
+    db.query(sql, values, (err, results) => {
+        if (err) {
+            console.error('Erreur lors de la mise à jour de l\'équipement :', err);
+            res.status(500).send(err);
+        } else {
+            res.status(200).json({ message: 'Équipement mis à jour avec succès' });
         }
     });
 });
