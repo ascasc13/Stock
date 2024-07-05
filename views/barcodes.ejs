@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+    </style>
+</head>
+<body>
+<%- include('partials/header') %>
+<main>
+    <div class="container mt-4">
+        <h2>Gestion des Équipements et Codes-barres</h2>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h3>Liste des Équipements</h3>
+                <div class="search-sort-container mb-3">
+                    <input type="text" id="search" placeholder="Rechercher par nom...">
+                    <select id="statut-filter">
+                        <option value="">Tous les statuts</option>
+                        <% statuses.forEach(status => { %>
+                            <option value="<%= status.nom %>"><%= status.nom %></option>
+                        <% }) %>
+                    </select>
+                    <select id="sort">
+                        <option value="nom">Nom</option>
+                        <option value="modele">Modèle</option>
+                        <option value="marque">Marque</option>
+                        <option value="code_barre">Code-barre</option>
+                    </select>
+                </div>
+                <form id="generate-multiple-barcode-images-form" action="/generate-multiple-barcode-images" method="POST">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Sélectionner</th>
+                            <th>Nom</th>
+                            <th>Modèle</th>
+                            <th>Marque</th>
+                            <th>Code-barres</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% equipements.forEach(equipement => { %>
+                            <tr>
+                                <td><input type="checkbox" name="equipmentIds" value="<%= equipement.id %>"></td>
+                                <td><%= equipement.nom %></td>
+                                <td><%= equipement.modele %></td>
+                                <td><%= equipement.marque %></td>
+                                <td><%= equipement.code_barre %></td>
+                            </tr>
+                        <% }) %>
+                        </tbody>
+                    </table>
+                    <button type="submit" class="btn btn-primary">Générer les images de Codes-barres</button>
+                </form>
+
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <h3>Générer des Codes-barres et Images de Codes-barres</h3>
+                <div class="card">
+                    <div class="card-body">
+                        <form id="generate-barcode-form" action="/generate-barcode" method="POST">
+                            <div class="form-group">
+                                <label for="selected-equipments">Équipements sélectionnés :</label>
+                                <textarea id="selected-equipments" name="selectedEquipments" class="form-control" rows="3" readonly></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Générer Codes-barres</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+<%- include('partials/footer') %>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    document.getElementById('search').addEventListener('input', function () {
+        filterEquipments();
+    });
+
+    document.getElementById('statut-filter').addEventListener('change', function () {
+        filterEquipments();
+    });
+
+    document.getElementById('sort').addEventListener('change', function () {
+        sortEquipments();
+    });
+
+    function filterEquipments() {
+        const searchValue = document.getElementById('search').value.toLowerCase();
+        const statutFilter = document.getElementById('statut-filter').value.toLowerCase();
+        const rows = document.querySelectorAll('tbody tr');
+
+        rows.forEach(row => {
+            const nomValue = row.cells[1].textContent.toLowerCase();
+            const modeleValue = row.cells[2].textContent.toLowerCase();
+            const marqueValue = row.cells[3].textContent.toLowerCase();
+            const codeBarreValue = row.cells[4].textContent.toLowerCase();
+
+            if (
+                (nomValue.includes(searchValue) ||
+                    modeleValue.includes(searchValue) ||
+                    marqueValue.includes(searchValue) ||
+                    codeBarreValue.includes(searchValue)) &&
+                (statutFilter === '' || row.cells[4].textContent.toLowerCase().includes(statutFilter))
+            ) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function sortEquipments() {
+        const sortValue = document.getElementById('sort').value;
+        const rows = Array.from(document.querySelectorAll('tbody tr'));
+
+        rows.sort((a, b) => {
+            const cellA = a.querySelector(`td:nth-child(${sortValue === 'nom' ? 2 : sortValue === 'modele' ? 3 : sortValue === 'marque' ? 4 : 5})`).textContent.toLowerCase();
+            const cellB = b.querySelector(`td:nth-child(${sortValue === 'nom' ? 2 : sortValue === 'modele' ? 3 : sortValue === 'marque' ? 4 : 5})`).textContent.toLowerCase();
+
+            if (cellA < cellB) return -1;
+            if (cellA > cellB) return 1;
+            return 0;
+        });
+
+        const tbody = document.querySelector('tbody');
+        tbody.innerHTML = '';
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    document.getElementById('generate-barcode-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const selectedEquipments = Array.from(document.querySelectorAll('input[name="selectedEquipments"]:checked')).map(input => input.value);
+        document.getElementById('selected-equipments').value = selectedEquipments.join(', ');
+        // Submit form for further processing
+        this.submit();
+    });
+
+    document.getElementById('generate-multiple-barcode-images-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const selectedEquipmentIds = Array.from(document.querySelectorAll('input[name="equipmentIds"]:checked')).map(input => input.value);
+        if (selectedEquipmentIds.length === 0) {
+            alert('Veuillez sélectionner au moins un équipement.');
+            return;
+        }
+        const formData = { equipmentIds: selectedEquipmentIds };
+        fetch('/generate-multiple-barcode-images', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur lors de la génération des codes-barres.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Codes-barres générés avec succès :', data);
+                // Redirection ou autre traitement après génération réussie
+                window.location.href = '/barcodes';
+            })
+            .catch(error => {
+                console.error('Erreur :', error.message);
+                alert('Erreur lors de la génération des codes-barres.');
+            });
+    });
+</script>
+</body>
+</html>

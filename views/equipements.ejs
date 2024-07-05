@@ -132,16 +132,18 @@
 </html>
 
 <script>
-    document.getElementById('search').addEventListener('input', function() {
-        filterEquipments();
-    });
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('search').addEventListener('input', function() {
+            filterEquipments();
+        });
 
-    document.getElementById('statut-filter').addEventListener('change', function() {
-        filterEquipments();
-    });
+        document.getElementById('statut-filter').addEventListener('change', function() {
+            filterEquipments();
+        });
 
-    document.getElementById('sort').addEventListener('change', function() {
-        sortEquipments();
+        document.getElementById('sort').addEventListener('change', function() {
+            sortEquipments();
+        });
     });
 
     function filterEquipments() {
@@ -152,17 +154,16 @@
         rows.forEach(row => {
             const nomValue = row.cells[0].textContent.toLowerCase();
             const marqueValue = row.cells[1].textContent.toLowerCase();
-            const statusValue = row.cells[2].textContent.toLowerCase();
-            const codeBarreValue = row.cells[3].textContent.toLowerCase();
-            const modeleValue = row.cells[4].textContent.toLowerCase();
+            const modeleValue = row.cells[2].textContent.toLowerCase();
+            const statusValue = row.cells[3].textContent.toLowerCase();
+            const codeBarreValue = row.cells[4].textContent.toLowerCase();
 
             if (
                 (nomValue.includes(searchValue) ||
                     marqueValue.includes(searchValue) ||
-                    statusValue.includes(searchValue) ||
-                    codeBarreValue.includes(searchValue) ||
-                    modeleValue.includes(searchValue)) &&
-                (statutFilter === '' || statusValue === statutFilter)
+                    modeleValue.includes(searchValue) ||
+                    codeBarreValue.includes(searchValue)) &&
+                (statutFilter === '' || statusValue.includes(statutFilter))
             ) {
                 row.style.display = '';
             } else {
@@ -176,17 +177,23 @@
         const rows = Array.from(document.querySelectorAll('#equipements-tbody tr'));
 
         rows.sort((a, b) => {
-            const cellA = a.querySelector(`td:nth-child(${sortValue === 'nom' ? 1 : sortValue === 'marque' ? 2 : sortValue === 'modele' ? 3 : 5})`).textContent.toLowerCase();
-            const cellB = b.querySelector(`td:nth-child(${sortValue === 'nom' ? 1 : sortValue === 'marque' ? 2 : sortValue === 'modele' ? 3 : 5})`).textContent.toLowerCase();
+            const cellA = getCellValue(a, sortValue);
+            const cellB = getCellValue(b, sortValue);
 
-            if (cellA < cellB) return -1;
-            if (cellA > cellB) return 1;
-            return 0;
+            if (sortValue === 'status') {
+                return cellA.localeCompare(cellB);
+            } else {
+                return cellA < cellB ? -1 : cellA > cellB ? 1 : 0;
+            }
         });
 
         const tbody = document.getElementById('equipements-tbody');
         tbody.innerHTML = '';
         rows.forEach(row => tbody.appendChild(row));
+    }
+
+    function getCellValue(row, index) {
+        return row.cells[index === 'status' ? 3 : index === 'code_barre' ? 4 : index === 'modele' ? 2 : index === 'marque' ? 1 : 0].textContent.toLowerCase();
     }
 
     function supprimerEquipement(id) {

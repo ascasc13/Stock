@@ -5,6 +5,17 @@ const db = require('./db');
 const app = express();
 const PORT = 3000;
 
+// Fonction pour générer un code-barres aléatoire
+function generateBarcode() {
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    for (let i = 0; i < 12; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+// Configuration d'Express
 app.set('view engine', 'ejs');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -28,34 +39,19 @@ app.get('/', (req, res) => {
     const marquesQuery = 'SELECT * FROM marque';
 
     db.query(totalEquipementsQuery, (err, totalResults) => {
-        if (err) {
-            res.status(500).send(err);
-            return;
-        }
+        if (err) return res.status(500).send(err);
 
         db.query(recentEquipementsQuery, (err, recentResults) => {
-            if (err) {
-                res.status(500).send(err);
-                return;
-            }
+            if (err) return res.status(500).send(err);
 
             db.query(statusCountsQuery, (err, statusResults) => {
-                if (err) {
-                    res.status(500).send(err);
-                    return;
-                }
+                if (err) return res.status(500).send(err);
 
                 db.query(typesQuery, (err, typesResults) => {
-                    if (err) {
-                        res.status(500).send(err);
-                        return;
-                    }
+                    if (err) return res.status(500).send(err);
 
                     db.query(marquesQuery, (err, marquesResults) => {
-                        if (err) {
-                            res.status(500).send(err);
-                            return;
-                        }
+                        if (err) return res.status(500).send(err);
 
                         const statuses = statusResults.map(row => row.status);
                         const statusCounts = statusResults.map(row => row.count);
@@ -78,43 +74,25 @@ app.get('/', (req, res) => {
 
 // Route pour la liste des équipements
 app.get('/equipements', (req, res) => {
-    // Récupération des équipements avec leurs détails
-    db.query('SELECT * FROM equipement', (err, equipements) => {
-        if (err) {
-            res.status(500).send(err);
-            return;
-        }
+    const equipementsQuery = 'SELECT * FROM equipement';
+    const marquesQuery = 'SELECT * FROM marque';
+    const statusesQuery = 'SELECT * FROM status';
 
-        // Vérification des données récupérées
-        console.log("Équipements récupérés :", equipements);
+    db.query(equipementsQuery, (err, equipements) => {
+        if (err) return res.status(500).send(err);
 
-        // Récupération des marques
-        db.query('SELECT * FROM marque', (err, marques) => {
-            if (err) {
-                res.status(500).send(err);
-                return;
-            }
+        db.query(marquesQuery, (err, marques) => {
+            if (err) return res.status(500).send(err);
 
-            // Vérification des données récupérées
-            console.log("Marques récupérées :", marques);
+            db.query(statusesQuery, (err, statuses) => {
+                if (err) return res.status(500).send(err);
 
-            // Récupération des statuts
-            db.query('SELECT * FROM status', (err, statuses) => {
-                if (err) {
-                    res.status(500).send(err);
-                    return;
-                }
-
-                // Vérification des données récupérées
-                console.log("Statuses récupérés :", statuses);
-
-                // Rendu de la vue equipements.ejs avec les données récupérées
                 res.render('equipements', {
                     title: 'Liste des équipements',
                     equipements: equipements,
                     marques: marques,
                     statuses: statuses,
-                    modifierVisible: false // Ajout de cette ligne
+                    modifierVisible: false
                 });
             });
         });
@@ -125,16 +103,13 @@ app.get('/equipements', (req, res) => {
 app.get('/equipements/:id', (req, res) => {
     const { id } = req.params;
     const sql = 'SELECT * FROM equipement WHERE id = ?';
+
     db.query(sql, [id], (err, results) => {
-        if (err) {
-            res.status(500).send(err);
+        if (err) return res.status(500).send(err);
+        if (results.length > 0) {
+            res.status(200).json(results[0]);
         } else {
-            if (results.length > 0) {
-                console.log("Détails de l'équipement récupérés :", results[0]); // Ajouter cette ligne pour déboguer
-                res.status(200).json(results[0]);
-            } else {
-                res.status(404).send('Équipement non trouvé');
-            }
+            res.status(404).send('Équipement non trouvé');
         }
     });
 });
@@ -143,17 +118,12 @@ app.get('/equipements/:id', (req, res) => {
 app.put('/equipements/:id', (req, res) => {
     const { id } = req.params;
     const { nom, marque_id, status_id, code_barre } = req.body;
-
-    const sql = 'UPDATE equipement SET nom = ?, marque_id = ?, status_id = ?, Code_barre = ? WHERE id = ?';
+    const sql = 'UPDATE equipement SET nom = ?, marque_id = ?, status_id = ?, code_barre = ? WHERE id = ?';
     const values = [nom, marque_id, status_id, code_barre, id];
 
-    db.query(sql, values, (err, results) => {
-        if (err) {
-            console.error('Erreur lors de la mise à jour de l\'équipement :', err);
-            res.status(500).send(err);
-        } else {
-            res.status(200).json({ message: 'Équipement mis à jour avec succès' });
-        }
+    db.query(sql, values, (err) => {
+        if (err) return res.status(500).send(err);
+        res.status(200).json({ message: 'Équipement mis à jour avec succès' });
     });
 });
 
@@ -162,12 +132,9 @@ app.delete('/equipements/:id', (req, res) => {
     const { id } = req.params;
     const sql = 'DELETE FROM equipement WHERE id = ?';
 
-    db.query(sql, [id], (err, results) => {
-        if (err) {
-            res.status(500).send(err);
-        } else {
-            res.status(200).json({ message: 'Équipement supprimé avec succès' });
-        }
+    db.query(sql, [id], (err) => {
+        if (err) return res.status(500).send(err);
+        res.status(200).json({ message: 'Équipement supprimé avec succès' });
     });
 });
 
@@ -178,22 +145,13 @@ app.get('/ajouter', (req, res) => {
     const statusesQuery = 'SELECT * FROM status';
 
     db.query(typesQuery, (err, typesResults) => {
-        if (err) {
-            res.status(500).send(err);
-            return;
-        }
+        if (err) return res.status(500).send(err);
 
         db.query(marquesQuery, (err, marquesResults) => {
-            if (err) {
-                res.status(500).send(err);
-                return;
-            }
+            if (err) return res.status(500).send(err);
 
             db.query(statusesQuery, (err, statusesResults) => {
-                if (err) {
-                    res.status(500).send(err);
-                    return;
-                }
+                if (err) return res.status(500).send(err);
 
                 res.render('ajouter', {
                     title: 'Ajouter un équipement',
@@ -208,16 +166,14 @@ app.get('/ajouter', (req, res) => {
 
 // Route pour ajouter un équipement
 app.post('/equipements', (req, res) => {
-    const { nom, type_id, marque_id, modele, code_barre, status_id } = req.body;
+    const { nom, type_id, marque_id, modele, status_id } = req.body;
+    const code_barre = generateBarcode();
     const sql = 'INSERT INTO equipement (nom, type_id, marque_id, modele, code_barre, status_id) VALUES (?, ?, ?, ?, ?, ?)';
     const values = [nom, type_id, marque_id, modele, code_barre, status_id];
 
-    db.query(sql, values, (err, results) => {
-        if (err) {
-            res.json({ success: false, message: 'Erreur lors de l\'ajout de l\'équipement' });
-        } else {
-            res.json({ success: true, message: 'Équipement ajouté avec succès' });
-        }
+    db.query(sql, values, (err) => {
+        if (err) return res.json({ success: false, message: 'Erreur lors de l\'ajout de l\'équipement' });
+        res.json({ success: true, message: 'Équipement ajouté avec succès' });
     });
 });
 
@@ -225,12 +181,10 @@ app.post('/equipements', (req, res) => {
 app.post('/types', (req, res) => {
     const { nom_type } = req.body;
     const sql = 'INSERT INTO type (nom) VALUES (?)';
-    db.query(sql, [nom_type], (err, results) => {
-        if (err) {
-            res.json({ success: false, message: 'Erreur lors de l\'ajout du type' });
-        } else {
-            res.json({ success: true, message: 'Type ajouté avec succès' });
-        }
+
+    db.query(sql, [nom_type], (err) => {
+        if (err) return res.json({ success: false, message: 'Erreur lors de l\'ajout du type' });
+        res.json({ success: true, message: 'Type ajouté avec succès' });
     });
 });
 
@@ -238,12 +192,10 @@ app.post('/types', (req, res) => {
 app.post('/statuses', (req, res) => {
     const { nom_statut } = req.body;
     const sql = 'INSERT INTO status (nom) VALUES (?)';
-    db.query(sql, [nom_statut], (err, results) => {
-        if (err) {
-            res.json({ success: false, message: 'Erreur lors de l\'ajout du statut' });
-        } else {
-            res.json({ success: true, message: 'Statut ajouté avec succès' });
-        }
+
+    db.query(sql, [nom_statut], (err) => {
+        if (err) return res.json({ success: false, message: 'Erreur lors de l\'ajout du statut' });
+        res.json({ success: true, message: 'Statut ajouté avec succès' });
     });
 });
 
@@ -251,15 +203,88 @@ app.post('/statuses', (req, res) => {
 app.post('/marques', (req, res) => {
     const { nom_marque } = req.body;
     const sql = 'INSERT INTO marque (nom) VALUES (?)';
-    db.query(sql, [nom_marque], (err, results) => {
-        if (err) {
-            res.json({ success: false, message: 'Erreur lors de l\'ajout de la marque' });
-        } else {
-            res.json({ success: true, message: 'Marque ajoutée avec succès' });
-        }
+
+    db.query(sql, [nom_marque], (err) => {
+        if (err) return res.json({ success: false, message: 'Erreur lors de l\'ajout de la marque' });
+        res.json({ success: true, message: 'Marque ajoutée avec succès' });
     });
 });
 
+// Route pour la gestion des codes-barres
+app.get('/barcodes', (req, res) => {
+    const queryEquipments = 'SELECT * FROM equipement';
+    const queryMarques = 'SELECT * FROM marque';
+    const queryStatuses = 'SELECT * FROM status';
+
+    db.query(queryEquipments, (errEquip, resultsEquip) => {
+        if (errEquip) return res.status(500).send(errEquip);
+
+        db.query(queryMarques, (errMarq, resultsMarq) => {
+            if (errMarq) return res.status(500).send(errMarq);
+
+            db.query(queryStatuses, (errStat, resultsStat) => {
+                if (errStat) return res.status(500).send(errStat);
+
+                res.render('barcodes', {
+                    title: 'Gestion des Codes-barres',
+                    equipements: resultsEquip,
+                    marques: resultsMarq,
+                    statuses: resultsStat
+                });
+            });
+        });
+    });
+});
+
+// Route pour générer un nouveau code-barres pour un équipement spécifique
+app.post('/generate-barcode', (req, res) => {
+    const { equipmentId } = req.body;
+    const newBarcode = generateBarcode();
+    const sql = 'UPDATE equipement SET code_barre = ? WHERE id = ?';
+
+    db.query(sql, [newBarcode, equipmentId], (err) => {
+        if (err) return res.status(500).send(err);
+        res.redirect('/barcodes');
+    });
+});
+
+// Route pour générer plusieurs code
+app.post('/generate-multiple-barcode-images', (req, res) => {
+    const { equipmentIds } = req.body;
+
+    // Vérification si equipmentIds est défini et est un tableau
+    if (!Array.isArray(equipmentIds)) {
+        return res.status(400).send('Invalid request: equipmentIds should be an array.');
+    }
+
+    const newBarcodes = equipmentIds.map(() => generateBarcode());
+
+    // Utilisation de Promise pour gérer les requêtes asynchrones à la base de données
+    const updatePromises = equipmentIds.map((id, index) => {
+        const sql = 'UPDATE equipement SET code_barre = ? WHERE id = ?';
+        return new Promise((resolve, reject) => {
+            db.query(sql, [newBarcodes[index], id], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    });
+
+    Promise.all(updatePromises)
+        .then(() => {
+            res.redirect('/barcodes');
+        })
+        .catch((err) => {
+            console.error('Erreur lors de la mise à jour des équipements :', err);
+            res.status(500).send(err);
+        });
+});
+
+
+// Lancement du serveur
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });

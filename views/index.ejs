@@ -9,15 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-<header>
-    <nav>
-        <ul>
-            <li><a href="/">Accueil</a></li>
-            <li><a href="/equipements">Équipements</a></li>
-            <li><a href="/ajouter">Ajouter un équipement</a></li>
-        </ul>
-    </nav>
-</header>
+    <%- include('partials/header') %>
 
 <main>
     <h1>Bienvenue sur Stockorama</h1>
@@ -30,9 +22,7 @@
         </div>
     </section>
 </main>
-<footer>
-    <p>&copy; 2024 Stockorama. Tous droits réservés.</p>
-</footer>
+<%- include('partials/footer') %>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
