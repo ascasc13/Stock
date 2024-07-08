@@ -5,31 +5,20 @@ const db = require('./db');
 const app = express();
 const PORT = 3000;
 
-// Fonction pour générer un code-barres aléatoire
-function generateBarcode() {
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let result = '';
-    for (let i = 0; i < 12; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-}
+// Configuration d'Express pour servir les fichiers statiques
+app.use(express.static('public'));
 
-// Configuration d'Express
 app.set('view engine', 'ejs');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
-
 // Route pour la page d'accueil
 app.get('/', (req, res) => {
     const totalEquipementsQuery = 'SELECT COUNT(*) AS total FROM equipement';
-    const recentEquipementsQuery = `
+    const allEquipementsQuery = `
         SELECT e.id, e.nom, m.nom AS marque, e.modele, e.code_barre, s.nom AS statut 
         FROM equipement e 
         JOIN marque m ON e.marque_id = m.id 
-        JOIN status s ON e.status_id = s.id 
-        ORDER BY e.id DESC LIMIT 5`;
+        JOIN status s ON e.status_id = s.id`;
     const statusCountsQuery = `
         SELECT s.nom AS status, COUNT(e.id) AS count 
         FROM equipement e 
@@ -41,7 +30,7 @@ app.get('/', (req, res) => {
     db.query(totalEquipementsQuery, (err, totalResults) => {
         if (err) return res.status(500).send(err);
 
-        db.query(recentEquipementsQuery, (err, recentResults) => {
+        db.query(allEquipementsQuery, (err, equipementsResults) => {
             if (err) return res.status(500).send(err);
 
             db.query(statusCountsQuery, (err, statusResults) => {
@@ -59,7 +48,7 @@ app.get('/', (req, res) => {
                         res.render('index', {
                             title: 'Bienvenue sur Stockorama',
                             totalEquipements: totalResults[0].total,
-                            recentEquipements: recentResults,
+                            equipements: equipementsResults,
                             statuses: statuses,
                             statusCounts: statusCounts,
                             types: typesResults,

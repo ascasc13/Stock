@@ -3,22 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bienvenue sur Stockorama</title>
+    <title><%= title %></title>
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .card {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px; /* Largeur maximale de la carte */
+            margin: 0 auto; /* Centrer la carte */
+        }
+        .card-header {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .filter-container {
+            margin-bottom: 12px;
+        }
+        #chartContainer {
+            text-align: center;
+        }
+        #statusChart {
+            max-width: 100%; /* Taille maximale du graphique */
+            height: auto; /* Hauteur automatique pour respecter l'aspect ratio */
+        }
+    </style>
 </head>
 <body>
-    <%- include('partials/header') %>
+<%- include('partials/header') %>
 
 <main>
     <h1>Bienvenue sur Stockorama</h1>
 
     <!-- Section Dashboard -->
     <section class="dashboard">
-        <div class="dashboard-item">
-            <h2>État des équipements</h2>
-            <canvas id="statusChart" width="400" height="400"></canvas>
+        <!-- Carte pour le graphique -->
+        <div class="card">
+            <div class="filter-container">
+                <input type="text" id="searchInput" placeholder="Rechercher par nom...">
+                <select id="filterMarque">
+                    <option value="">Filtrer par marque...</option>
+                    <% marques.forEach(function(marque) { %>
+                        <option value="<%= marque.nom %>"><%= marque.nom %></option>
+                    <% }); %>
+                </select>
+            </div>
+            <div id="chartContainer">
+                <canvas id="statusChart" width="400" height="300"></canvas>
+            </div>
         </div>
     </section>
 </main>
@@ -26,39 +63,77 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Inject the data from Express into JavaScript variables
-        const statuses = <%- JSON.stringify(statuses) %>;
-        const statusCounts = <%= JSON.stringify(statusCounts) %>;
+        // Injecter les données depuis Express dans les variables JavaScript
+        const equipements = <%- JSON.stringify(equipements) %>;
 
+        // Initialiser le graphique
         const ctx = document.getElementById('statusChart').getContext('2d');
+        let chart;
 
-        const chart = new Chart(ctx, {
-            type: 'pie',
-            data: {
+        function updateChart(filteredEquipements) {
+            const statusCounts = {};
+            const statuses = [];
+
+            filteredEquipements.forEach(equipement => {
+                if (!statusCounts[equipement.statut]) {
+                    statusCounts[equipement.statut] = 0;
+                    statuses.push(equipement.statut);
+                }
+                statusCounts[equipement.statut]++;
+            });
+
+            const data = {
                 labels: statuses,
                 datasets: [{
                     label: 'État des équipements',
-                    data: statusCounts,
+                    data: statuses.map(status => statusCounts[status]),
                     backgroundColor: ['#ffcccb', '#90ee90', '#ffa07a'],
                     borderColor: ['#e74c3c', '#2ecc71', '#ff6347'],
                     borderWidth: 1
                 }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    title: {
-                        display: true,
-                        text: 'État des équipements'
+            };
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            chart = new Chart(ctx, {
+                type: 'pie',
+                data: data,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'État des équipements'
+                        }
                     }
                 }
-            }
+            });
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function(event) {
+            const searchTerm = event.target.value.toLowerCase();
+            const filteredEquipements = equipements.filter(equipement =>
+                equipement.nom.toLowerCase().includes(searchTerm)
+            );
+            updateChart(filteredEquipements);
         });
+
+        document.getElementById('filterMarque').addEventListener('change', function(event) {
+            const marque = event.target.value;
+            const filteredEquipements = equipements.filter(equipement =>
+                marque === '' || equipement.marque === marque
+            );
+            updateChart(filteredEquipements);
+        });
+
+        // Rendu initial du graphique
+        updateChart(equipements);
     });
 </script>
-
 </body>
 </html>

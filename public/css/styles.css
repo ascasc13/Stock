@@ -8,19 +8,39 @@ body {
 }
 
 header {
-    background-color: #4CAF50;
-    padding: 1em;
+    background-color: #0024D3;
+    padding: 2em 2em; /* Augmenter la hauteur du header */
     color: white;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    position: relative; /* Ajouté */
+    justify-content: center; /* Centrer les onglets */
+}
+
+.logo img {
+    max-height: 50px; /* Ajustez la hauteur maximale de l'image */
+    width: auto; /* Assurez-vous que la largeur est proportionnelle */
+}
+
+.logo {
+    position: absolute; /* Ajouté */
+    left: 1em; /* Ajouté */
+}
+
+nav {
+    display: flex;
+    align-items: center;
 }
 
 nav ul {
     list-style-type: none;
     padding: 0;
+    display: flex;
+    align-items: center;
+    margin: 0;
 }
 
 nav li {
-    display: inline;
     margin: 0 1em;
 }
 
