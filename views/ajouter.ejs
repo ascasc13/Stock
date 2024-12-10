@@ -8,25 +8,23 @@
     <style>
         .popup {
             position: fixed;
-            bottom: 100px; /* Distance du bas de la page */
-            left: 50%; /* Positionné au centre horizontalement */
-            transform: translateX(-50%); /* Centrage horizontal précis */
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
             padding: 10px;
             background-color: #28a745;
             color: white;
             border-radius: 5px;
             z-index: 1000;
-            opacity: 0; /* Ajout d'opacité initiale */
-            transition: opacity 0.3s ease; /* Transition pour un affichage en douceur */
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
         .popup.error {
             background-color: #dc3545;
         }
         .popup.show {
-            opacity: 1; /* Réglage de l'opacité à 1 lors de l'affichage */
+            opacity: 1;
         }
-
-        /* Nouveau style pour centrer horizontalement */
         @media (max-width: 600px) {
             .popup {
                 width: 100%;
@@ -38,7 +36,7 @@
             }
         }
     </style>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 </head>
 <body>
 <%- include('partials/header') %>
@@ -83,6 +81,10 @@
                     <div class="form-group">
                         <label for="modele">Modèle :</label>
                         <input type="text" id="modele" name="modele" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="code_barre">Code Barre :</label>
+                        <input type="text" id="code_barre" name="code_barre" required>
                     </div>
                     <div class="form-group">
                         <button type="submit">Ajouter</button>
@@ -141,9 +143,27 @@
                 </form>
             </div>
         </div>
-    </div>
 
-    <div id="popup" class="popup"></div>
+        <div class="card">
+            <div class="card-header">
+                <h2>Entrer un code barre</h2>
+            </div>
+            <div class="card-body">
+                <form id="codeBarreForm">
+                    <div class="form-group">
+                        <label for="code_barre_input">Code Barre :</label>
+                        <input type="text" id="code_barre_input" name="code_barre" required>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" onclick="interpreterCodeBarre()">Interpréter</button>
+                    </div>
+                </form>
+                <div id="resultat_code_barre"></div>
+            </div>
+        </div>
+
+
+        <div id="popup" class="popup"></div>
 
 </main>
 <%- include('partials/footer') %>
@@ -152,13 +172,13 @@
     const showPopup = (message, isError = false) => {
         const popup = document.getElementById('popup');
         popup.textContent = message;
-        popup.className = 'popup show'; // Ajout de la classe 'show' pour afficher le popup
+        popup.className = 'popup show';
         if (isError) {
-            popup.classList.add('error'); // Ajout de la classe 'error' pour les messages d'erreur
+            popup.classList.add('error');
         }
         setTimeout(() => {
-            popup.classList.remove('show'); // Suppression de la classe 'show' après 3 secondes
-        }, 3000); // Affichage pendant 3 secondes
+            popup.classList.remove('show');
+        }, 3000);
     };
 
     const handleFormSubmit = (formId, url) => {
@@ -182,11 +202,11 @@
                 .then(result => {
                     showPopup(result.message, !result.success);
                     if (result.success) {
-                        form.reset(); // Réinitialisation du formulaire après succès
+                        form.reset();
                     }
                 })
                 .catch(error => {
-                    showPopup('Erreur lors de l\'envoi des données', true); // Affichage d'une erreur générique
+                    showPopup('Erreur lors de l\'envoi des données', true);
                 });
         });
     };
